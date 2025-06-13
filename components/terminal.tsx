@@ -261,12 +261,15 @@ export default function Terminal() {
         output = <p className="text-red-400">Eita, esse tema não rola. Tenta um desses: default, green, blue, amber</p>
       }
     } else if (commandLower === "clearall") {
-      output = <p className="text-yellow-400">Ok... você que pediu. Iniciando o estalo de Thanos...</p>
-
-      // Ativa o efeito Thanos depois de um tempinho pra dar um drama
+      output = (
+        <div className="py-2">
+          <p className="text-gray-400">Iniciando protocolo de limpeza avançada...</p>
+          <p className="text-gray-500 text-sm mt-1">Processando desintegração molecular...</p>
+        </div>
+      )
       setTimeout(() => {
         setShowThanosEffect(true)
-      }, 1500)
+      }, 2000)
     } else {
       output = (
         <p className="text-red-400">

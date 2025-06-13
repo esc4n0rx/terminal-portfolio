@@ -7,200 +7,194 @@ interface ThanosEffectProps {
 }
 
 export default function ThanosEffect({ onComplete }: ThanosEffectProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!canvasRef.current) return
-
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    // Configurar o canvas para ocupar toda a tela
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-    // Obter o conteúdo do terminal
-    const terminalContent = document.querySelector(".terminal-content") as HTMLElement
-    if (!terminalContent) {
+    const terminalElement = document.querySelector(".terminal-content") as HTMLElement
+    if (!terminalElement) {
       onComplete()
       return
     }
 
-    // Criar partículas baseadas no texto e elementos do terminal
-    const particles: {
-      x: number
-      y: number
-      size: number
-      color: string
+    const particles: Array<{
+      element: HTMLElement
+      originalRect: DOMRect
       vx: number
       vy: number
-      alpha: number
+      rotation: number
+      rotationSpeed: number
+      scale: number
+      fadeSpeed: number
       delay: number
-    }[] = []
+    }> = []
 
-    // Função para criar partículas a partir de um elemento
-    const createParticlesFromElement = (element: Node, depth = 0) => {
-      // Verificar se é um nó de texto
-      if (element.nodeType === Node.TEXT_NODE) {
-        if (element.textContent && element.textContent.trim().length > 0 && element.parentElement) {
-          const text = element.textContent.trim()
-          const parentElement = element.parentElement
-          const parentStyle = window.getComputedStyle(parentElement)
-          const fontSize = Number.parseInt(parentStyle.fontSize) || 16
-          const color = parentStyle.color || "#ffffff"
-          const rect = parentElement.getBoundingClientRect()
-
-          // Estimar a largura de cada caractere (aproximação)
-          const charWidth = fontSize * 0.6
-
-          for (let i = 0; i < text.length; i++) {
-            if (text[i] === " ") continue
-
-            // Posição estimada de cada caractere
-            const x = rect.left + i * charWidth
-            const y = rect.top
-
-            // Criar várias partículas para cada caractere
-            const particleCount = Math.max(3, Math.floor(fontSize / 4))
-            for (let j = 0; j < particleCount; j++) {
-              particles.push({
-                x: x + Math.random() * charWidth,
-                y: y + Math.random() * fontSize,
-                size: Math.random() * 3 + 1,
-                color,
-                vx: (Math.random() - 0.5) * 3,
-                vy: (Math.random() - 0.5) * 3 - Math.random() * 2, // Tendência a subir
-                alpha: 1,
-                delay: Math.random() * 2000 + depth * 100, // Delay baseado na profundidade do elemento
-              })
-            }
+    const createParticlesFromText = () => {
+      // Pegar todos os elementos de texto de forma mais eficiente
+      const walker = document.createTreeWalker(
+        terminalElement,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            const text = node.textContent?.trim()
+            return text && text.length > 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
           }
         }
+      )
+
+      const textNodes: Node[] = []
+      let node
+      while (node = walker.nextNode()) {
+        textNodes.push(node)
       }
-      // Verificar se é um elemento DOM
-      else if (element.nodeType === Node.ELEMENT_NODE) {
-        const elementNode = element as HTMLElement
 
-        // Verificar se o elemento está visível
-        const style = window.getComputedStyle(elementNode)
-        if (style.display === "none" || style.visibility === "hidden") return
-
-        const rect = elementNode.getBoundingClientRect()
-        const bgColor = style.backgroundColor
-        const borderColor = style.borderColor
-        const color =
-          bgColor !== "rgba(0, 0, 0, 0)" && bgColor !== "transparent"
-            ? bgColor
-            : borderColor !== "rgba(0, 0, 0, 0)" && borderColor !== "transparent"
-              ? borderColor
-              : "#333"
-
-        // Criar partículas apenas para elementos visíveis com cor
-        if (color !== "rgba(0, 0, 0, 0)" && color !== "transparent") {
-          const particleCount = Math.max(5, Math.floor((rect.width * rect.height) / 300))
-          for (let i = 0; i < particleCount; i++) {
-            particles.push({
-              x: rect.left + Math.random() * rect.width,
-              y: rect.top + Math.random() * rect.height,
-              size: Math.random() * 4 + 2,
-              color,
-              vx: (Math.random() - 0.5) * 3,
-              vy: (Math.random() - 0.5) * 3 - Math.random() * 2,
-              alpha: 1,
-              delay: Math.random() * 2000 + depth * 100,
-            })
-          }
-        }
-
-        // Processar filhos recursivamente
-        Array.from(element.childNodes).forEach((child) => {
-          createParticlesFromElement(child, depth + 1)
-        })
-      }
-    }
-
-    // Criar partículas a partir de todos os elementos do terminal
-    Array.from(terminalContent.childNodes).forEach((child) => {
-      createParticlesFromElement(child)
-    })
-
-    // Adicionar partículas extras para garantir um efeito visual rico
-    const extraParticles = 500
-    for (let i = 0; i < extraParticles; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 3 + 1,
-        color: "#ffffff",
-        vx: (Math.random() - 0.5) * 3,
-        vy: (Math.random() - 0.5) * 3 - Math.random() * 2,
-        alpha: 1,
-        delay: Math.random() * 3000,
+      // Agrupar texto em pedaços maiores (por linha/elemento pai)
+      const textGroups = new Map<Element, string>()
+      
+      textNodes.forEach(textNode => {
+        const parent = textNode.parentElement
+        if (!parent) return
+        
+        const existingText = textGroups.get(parent) || ''
+        textGroups.set(parent, existingText + textNode.textContent)
       })
+
+      // Criar partículas apenas para grupos de texto
+      let delayCounter = 0
+      
+      textGroups.forEach((text, parentElement) => {
+        const rect = parentElement.getBoundingClientRect()
+        const style = window.getComputedStyle(parentElement)
+        
+        // Pular elementos muito pequenos ou invisíveis
+        if (rect.width < 5 || rect.height < 5) return
+        
+        // Dividir o texto em pedaços menores (palavras ou grupos de palavras)
+        const chunks = text.split(/\s+/).filter(chunk => chunk.length > 0)
+        const maxChunksPerElement = Math.min(chunks.length, 8) // Limite máximo
+        
+        for (let i = 0; i < maxChunksPerElement; i++) {
+          const chunk = chunks[i] || chunks[chunks.length - 1]
+          
+          // Criar elemento da partícula
+          const particle = document.createElement('div')
+          particle.textContent = chunk
+          particle.style.cssText = `
+            position: fixed;
+            left: ${rect.left + (i / maxChunksPerElement) * rect.width}px;
+            top: ${rect.top + Math.random() * rect.height}px;
+            font-size: ${style.fontSize};
+            color: ${style.color};
+            font-family: ${style.fontFamily};
+            font-weight: ${style.fontWeight};
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+            user-select: none;
+            opacity: 1;
+            transform-origin: center;
+          `
+          
+          document.body.appendChild(particle)
+          
+          particles.push({
+            element: particle,
+            originalRect: rect,
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 2 + 0.5,
+            rotation: 0,
+            rotationSpeed: (Math.random() - 0.5) * 2,
+            scale: 1,
+            fadeSpeed: 0.008 + Math.random() * 0.004,
+            delay: delayCounter * 100
+          })
+          
+          delayCounter++
+        }
+      })
+
+      console.log(`Criadas ${particles.length} partículas`) // Debug
     }
 
-    // Ocultar o conteúdo original
-    terminalContent.style.visibility = "hidden"
-
-    // Tempo de início da animação
-    const startTime = Date.now()
-
-    // Função de animação
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
       const now = Date.now()
       let allGone = true
 
-      // Desenhar e atualizar cada partícula
-      for (const particle of particles) {
-        // Verificar se a partícula deve começar a se mover
-        if (now - startTime < particle.delay) {
-          // Desenhar partícula estática antes do delay
-          ctx.fillStyle = particle.color
-          ctx.globalAlpha = particle.alpha
-          ctx.fillRect(particle.x, particle.y, particle.size, particle.size)
+      particles.forEach((particle, index) => {
+        // Verificar delay
+        if (now < particle.delay) {
           allGone = false
-          continue
+          return
         }
 
-        // Atualizar posição
-        particle.x += particle.vx
-        particle.y += particle.vy
+        const element = particle.element
+        if (!element.parentNode) return
 
-        // Reduzir opacidade
-        particle.alpha -= 0.01
-        if (particle.alpha > 0) {
-          allGone = false
-          ctx.fillStyle = particle.color
-          ctx.globalAlpha = particle.alpha
-          ctx.fillRect(particle.x, particle.y, particle.size, particle.size)
+        const currentOpacity = parseFloat(element.style.opacity || '1')
+        if (currentOpacity <= 0) {
+          element.remove()
+          return
         }
-      }
 
-      // Se todas as partículas desapareceram, encerrar a animação
+        allGone = false
+
+        // Atualizar física
+        const currentLeft = parseFloat(element.style.left)
+        const currentTop = parseFloat(element.style.top)
+        
+        particle.vy += 0.03 // gravidade
+        particle.rotation += particle.rotationSpeed
+        particle.scale -= 0.002
+        particle.scale = Math.max(0, particle.scale)
+
+        const newLeft = currentLeft + particle.vx
+        const newTop = currentTop + particle.vy
+        const newOpacity = Math.max(0, currentOpacity - particle.fadeSpeed)
+
+        // Aplicar transformações
+        element.style.left = `${newLeft}px`
+        element.style.top = `${newTop}px`
+        element.style.opacity = newOpacity.toString()
+        element.style.transform = `rotate(${particle.rotation}deg) scale(${particle.scale})`
+      })
+
       if (allGone) {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current)
-        }
-        onComplete()
-        return
+        // Limpar partículas restantes
+        particles.forEach(particle => {
+          if (particle.element.parentNode) {
+            particle.element.remove()
+          }
+        })
+        setTimeout(onComplete, 500)
+      } else {
+        animationRef.current = requestAnimationFrame(animate)
       }
-
-      animationRef.current = requestAnimationFrame(animate)
     }
 
-    // Iniciar a animação
-    animate()
+    const startDisintegration = () => {
+      // Criar partículas otimizadas
+      createParticlesFromText()
+      
+      // Ocultar conteúdo original após pequeno delay
+      setTimeout(() => {
+        terminalElement.style.visibility = 'hidden'
+        animate()
+      }, 200)
+    }
+
+    startDisintegration()
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
+      // Limpar partículas
+      particles.forEach(particle => {
+        if (particle.element.parentNode) {
+          particle.element.remove()
+        }
+      })
     }
   }, [onComplete])
 
-  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-50" />
+  return <div className="fixed inset-0 z-50 pointer-events-none" />
 }
