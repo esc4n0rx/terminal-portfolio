@@ -203,3 +203,41 @@ body {
   pointer-events: none;
   z-index: 1001;
 }
+/* app/globals.css - Adicionar essas regras ao final */
+
+/* Estilos para o VIM Editor */
+.vim-editor {
+  font-family: "Courier New", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.vim-editor textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.vim-editor .vim-cursor {
+  background-color: #00ff00;
+  color: #000000;
+  animation: vim-blink 1s step-end infinite;
+}
+
+@keyframes vim-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Estilo para seleção de texto no VIM */
+.vim-editor ::selection {
+  background-color: rgba(0, 255, 0, 0.3);
+}
+
+.vim-editor ::-moz-selection {
+  background-color: rgba(0, 255, 0, 0.3);
+}
