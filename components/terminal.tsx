@@ -614,7 +614,7 @@ export default function Terminal() {
       setTimeout(() => {
         setShowGlitchEffect(true)
       }, 500)
-    } else if (commandLower === "sudo hire-me") {
+    } else if (cmd.trim().toLowerCase() === "sudo hire-me") {
       output = (
         <div className="py-2">
           <p className="text-xl font-bold mb-2">🎯 Opa, mandou bem no comando!</p>
@@ -634,14 +634,32 @@ export default function Terminal() {
           </div>
         </div>
       )
-    } else if (commandLower.startsWith("color ")) {
-      const newTheme = commandLower.replace("color ", "").trim()
-      if (newTheme === "default" || newTheme === "green" || newTheme === "blue" || newTheme === "amber" || newTheme === "crt") {
-        setTheme(newTheme)
-        output = <p>🎨 Feito! Tema agora é: <span className="font-bold">{newTheme}</span></p>
-      } else {
-        output = <p className="text-red-400">Eita, esse tema não rola. Tenta um desses: default, green, blue, amber, crt</p>
-     }
+    } else if (commandLower === "color") {
+    // Corrigido: verificar se tem argumentos
+    const newTheme = args[0]?.toLowerCase()
+    
+    if (!newTheme) {
+      output = (
+        <div className="py-2">
+          <p className="font-bold mb-2">🎨 Temas disponíveis:</p>
+          <div className="space-y-1">
+            <p><span className="font-bold text-white">default</span> → Tema padrão (branco)</p>
+            <p><span className="font-bold text-green-400">green</span> → Verde terminal clássico</p>
+            <p><span className="font-bold text-blue-400">blue</span> → Azul moderno</p>
+            <p><span className="font-bold text-amber-400">amber</span> → Âmbar vintage</p>
+            <p><span className="font-bold text-green-400">crt</span> → Efeito CRT retrô</p>
+          </div>
+          <p className="mt-2 text-sm text-gray-400">
+            Use: <span className="font-bold">color [nome-do-tema]</span>
+          </p>
+        </div>
+      )
+    } else if (newTheme === "default" || newTheme === "green" || newTheme === "blue" || newTheme === "amber" || newTheme === "crt") {
+      setTheme(newTheme)
+      output = <p>🎨 Feito! Tema agora é: <span className="font-bold">{newTheme}</span></p>
+    } else {
+      output = <p className="text-red-400">Eita, esse tema não rola. Tenta um desses: default, green, blue, amber, crt</p>
+    }
    } else if (commandLower === "clearall") {
      output = (
        <div className="py-2">
