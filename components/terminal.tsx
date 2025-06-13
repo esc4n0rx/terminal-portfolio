@@ -7,6 +7,8 @@ import BootSequence from "./boot-sequence"
 import WindowControls from "./window-controls"
 import ThanosEffect from "./thanos-effect"
 import NotFound from "./not-found"
+import MatrixEffect from "./matrix-effect"
+import GlitchEffect from "./glitch-effect"
 
 // Tipagem pra gente saber o que cada comando guarda
 export type CommandType = {
@@ -21,12 +23,14 @@ export default function Terminal() {
   // Flag pra saber se o terminal já "bootou"
   const [booted, setBooted] = useState(false)
   // State pra controlar o tema de cores
-  const [theme, setTheme] = useState<"default" | "green" | "blue" | "amber">("default")
+  const [theme, setTheme] = useState<"default" | "green" | "blue" | "amber" | "crt">("default")
   // Ref pra conseguir scrollar o terminal pra baixo automaticamente
   const terminalRef = useRef<HTMLDivElement>(null)
   // States pra controlar as animações malucas
   const [showThanosEffect, setShowThanosEffect] = useState(false)
   const [showNotFound, setShowNotFound] = useState(false)
+  const [showMatrixEffect, setShowMatrixEffect] = useState(false)
+  const [showGlitchEffect, setShowGlitchEffect] = useState(false)
 
   // Nossos temas de cores. Simples e direto.
   const themes = {
@@ -34,7 +38,11 @@ export default function Terminal() {
     green: "text-green-400",
     blue: "text-blue-400",
     amber: "text-amber-400",
+    crt: "text-green-400",
   }
+
+  // Classes específicas para o tema CRT
+  const crtClasses = theme === "crt" ? "crt-monitor crt-flicker crt-scanlines" : ""
 
   // Efeito pra rolar o terminal pra baixo sempre que um comando novo aparece
   useEffect(() => {
@@ -72,7 +80,13 @@ export default function Terminal() {
             <span className="font-bold">clear</span> → Dá um limpa na tela.
           </p>
           <p>
-            <span className="font-bold">color [tema]</span> → Muda as cores (default, green, blue, amber).
+            <span className="font-bold">color [tema]</span> → Muda as cores (default, green, blue, amber, crt).
+          </p>
+          <p>
+            <span className="font-bold">matrix</span> → Entre na Matrix... (Ctrl+C pra sair).
+          </p>
+          <p>
+            <span className="font-bold">glitch</span> → Distorção visual temporária.
           </p>
           <p>
             <span className="font-bold">sudo hire-me</span> → Um comando especial pra quem tá recrutando.
@@ -232,6 +246,26 @@ export default function Terminal() {
     } else if (commandLower === "clear") {
       setHistory([])
       return // Retorna aqui pra não adicionar o 'clear' no histórico
+    } else if (commandLower === "matrix") {
+      output = (
+        <div className="py-2">
+          <p className="text-green-400">Iniciando Matrix...</p>
+          <p className="text-xs text-gray-500">Pressione Ctrl+C para sair</p>
+        </div>
+      )
+      setTimeout(() => {
+        setShowMatrixEffect(true)
+      }, 1000)
+    } else if (commandLower === "glitch") {
+      output = (
+        <div className="py-2">
+          <p className="text-red-400">Iniciando distorção...</p>
+          <p className="text-xs text-gray-500">Aguarde...</p>
+        </div>
+      )
+      setTimeout(() => {
+        setShowGlitchEffect(true)
+      }, 500)
     } else if (commandLower === "sudo hire-me") {
       output = (
         <div className="py-2">
@@ -254,11 +288,11 @@ export default function Terminal() {
       )
     } else if (commandLower.startsWith("color ")) {
       const newTheme = commandLower.replace("color ", "").trim()
-      if (newTheme === "default" || newTheme === "green" || newTheme === "blue" || newTheme === "amber") {
+      if (newTheme === "default" || newTheme === "green" || newTheme === "blue" || newTheme === "amber" || newTheme === "crt") {
         setTheme(newTheme)
         output = <p>Feito! Tema agora é: {newTheme}</p>
       } else {
-        output = <p className="text-red-400">Eita, esse tema não rola. Tenta um desses: default, green, blue, amber</p>
+        output = <p className="text-red-400">Eita, esse tema não rola. Tenta um desses: default, green, blue, amber, crt</p>
       }
     } else if (commandLower === "clearall") {
       output = (
@@ -284,7 +318,7 @@ export default function Terminal() {
 
   // A renderização do componente.
   return (
-    <div className={`w-full h-screen flex flex-col ${themes[theme]}`}>
+    <div className={`w-full h-screen flex flex-col ${themes[theme]} ${crtClasses}`}>
       {showNotFound ? (
         <NotFound />
       ) : (
@@ -306,6 +340,16 @@ export default function Terminal() {
                 setShowThanosEffect(false)
                 setShowNotFound(true)
               }}
+            />
+          )}
+          {showMatrixEffect && (
+            <MatrixEffect
+              onExit={() => setShowMatrixEffect(false)}
+            />
+          )}
+          {showGlitchEffect && (
+            <GlitchEffect
+              onComplete={() => setShowGlitchEffect(false)}
             />
           )}
         </>

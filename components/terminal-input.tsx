@@ -55,7 +55,13 @@ export default function TerminalInput({ onCommand }: TerminalInputProps) {
 
   // Garantir que o input sempre tenha foco quando clicar em qualquer lugar do terminal
   useEffect(() => {
-    const handleWindowClick = () => {
+    const handleWindowClick = (e: Event) => {
+      // Não focar se estivermos no Matrix mode ou outros overlays
+      const target = e.target as HTMLElement
+      if (target.closest('.matrix-overlay') || target.closest('.glitch-overlay')) {
+        return
+      }
+      
       if (inputRef.current) {
         inputRef.current.focus()
       }

@@ -47,3 +47,159 @@ body {
 .cursor-blink {
   animation: blink 1s step-end infinite;
 }
+
+/* Estilos CRT Monitor */
+.crt-monitor {
+  background: radial-gradient(ellipse at center, #0b4d0b 0%, #000000 100%);
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  box-shadow: 
+    inset 0 0 200px rgba(0, 255, 0, 0.1),
+    0 0 100px rgba(0, 255, 0, 0.2);
+}
+
+.crt-monitor::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%),
+    linear-gradient(transparent 50%, rgba(0, 255, 0, 0.03) 50%, rgba(0, 255, 0, 0.03) 52%, transparent 52%);
+  background-size: 100% 100%, 100% 4px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Scanlines para o efeito CRT */
+.crt-scanlines {
+  position: relative;
+}
+
+.crt-scanlines::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.1) 2px,
+    rgba(0, 255, 0, 0.1) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Animação de flicker do CRT */
+@keyframes crt-flicker {
+  0% {
+    opacity: 1;
+  }
+  98% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 0.98;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.crt-flicker {
+  animation: crt-flicker 0.15s infinite linear alternate;
+}
+
+/* Efeito de texto CRT com glow */
+.crt-monitor .terminal-content {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor;
+  filter: contrast(1.2) brightness(1.1);
+}
+
+/* Efeito de curvatura da tela CRT */
+.crt-monitor .terminal-content {
+  transform: perspective(1000px) rotateX(0.5deg);
+  transform-style: preserve-3d;
+}
+
+/* Interferência de fundo */
+@keyframes crt-noise {
+  0% { transform: translateX(0px); }
+  10% { transform: translateX(-2px); }
+  20% { transform: translateX(2px); }
+  30% { transform: translateX(-1px); }
+  40% { transform: translateX(1px); }
+  50% { transform: translateX(0px); }
+  60% { transform: translateX(1px); }
+  70% { transform: translateX(-1px); }
+  80% { transform: translateX(2px); }
+  90% { transform: translateX(-2px); }
+  100% { transform: translateX(0px); }
+}
+
+.crt-monitor::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 255, 0, 0.02) 1px,
+      transparent 2px
+    );
+  animation: crt-noise 0.2s infinite;
+  pointer-events: none;
+  z-index: 998;
+}
+
+/* Ajustes específicos para tema CRT */
+.crt-monitor * {
+  font-family: "Courier New", "Consolas", monospace;
+  font-weight: bold;
+}
+
+.crt-monitor input {
+  background: transparent !important;
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor;
+}
+
+/* Efeito de borda da tela CRT */
+.crt-monitor {
+  border: 8px solid #1a1a1a;
+  border-radius: 20px;
+  position: relative;
+}
+
+.crt-monitor::before {
+  border-radius: 12px;
+}
+
+/* Reflexo da tela */
+.crt-monitor .terminal-content::before {
+  content: "";
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 30%;
+  height: 20%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1001;
+}
